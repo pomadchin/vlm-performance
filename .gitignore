@@ -1,44 +1,54 @@
-# Operating System Files
+index.html
+index.js
+package.html
+lib
+site/
+docs/_build/
 
-*.DS_Store
-Thumbs.db
-
-# Build Files
-
-bin
+project/boot
+project/plugins/project
+project/plugins/target
+project/target
 target
-build/
-.gradle
-cmake-build-debug
+.ensime
+.metals/
+\#*#
+*~
+.#*
+.lib
+*.aux.xml
+*.jar
+*.crc
+_SUCCESS
 
-# Eclipse Project Files
-
-.classpath
+*.pyc
 .project
+.classpath
+.cache
 .settings
-
-# IntelliJ IDEA Files
-
+.history
+.idea
+.DS_Store
 *.iml
-*.ipr
-*.iws
-*.idea
+*.swp
+*.swo
+*.sublime-*
+.vagrant
 
-# Spring Bootstrap artifacts
+.terraform
+scripts/emr/terraform/variables.tf*
+scripts/emr/terraform/terraform.tfstate*
 
-dependency-reduced-pom.xml
-README.html
+lib
+index.html
+index.js
+.ensime*
 
-# Sublime files
+nohup.out
 
-*.sublime-workspace
+site/
 
-# Test data files #
+derby.log
+metastore_db/
+*.log
 
-java/data
-
-# Compiled libs #
-
-java/*.dylib
-java/*.so
-java/*dll
