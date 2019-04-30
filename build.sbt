@@ -26,7 +26,30 @@ resolvers ++= Seq(
 fork := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm" % "3.13.0",
+  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.13.0",
   "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.13.0",
-  "org.scalatest"  %% "scalatest" % "3.0.7" % Test
+  "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
 )
+
+test in assembly := {}
+assemblyShadeRules in assembly := {
+  Seq(ShadeRule.rename("shapeless.**" -> s"com.azavea.shaded.shapeless.@1").inAll)
+}
+
+assemblyMergeStrategy in assembly := {
+  case "reference.conf" => MergeStrategy.concat
+  case "application.conf" => MergeStrategy.concat
+  case PathList("META-INF", xs@_*) => xs match {
+    case ("MANIFEST.MF" :: Nil) => MergeStrategy.discard
+    // Concatenate everything in the services directory to keep GeoTools happy.
+    case ("services" :: _ :: Nil) => MergeStrategy.concat
+    // Concatenate these to keep JAI happy.
+    case ("javax.media.jai.registryFile.jai" :: Nil) | ("registryFile.jai" :: Nil) | ("registryFile.jaiext" :: Nil) => MergeStrategy.concat
+    case (name :: Nil) => {
+      // Must exclude META-INF/*.([RD]SA|SF) to avoid "Invalid signature file digest for Manifest main attributes" exception.
+      if (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".SF")) MergeStrategy.discard else MergeStrategy.first
+    }
+    case _ => MergeStrategy.first
+  }
+  case _ => MergeStrategy.first
+}
