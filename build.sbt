@@ -28,6 +28,8 @@ fork := true
 libraryDependencies ++= Seq(
   "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.13.0",
   "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.13.0",
+  "org.apache.spark"      %% "spark-core"              % "2.4.0",
+  "org.apache.spark"      %% "spark-sql"               % "2.4.0",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
 )
 
