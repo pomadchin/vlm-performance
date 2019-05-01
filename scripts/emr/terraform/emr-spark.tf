@@ -26,7 +26,7 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     bid_price      = "${var.spot_price}"
     instance_count = 1
     instance_role  = "MASTER"
-    instance_type  = "m3.xlarge"
+    instance_type  = "m4.xlarge"
     name           = "EmrGeoTrellisZeppelin-MasterGroup"
   }
 
@@ -34,7 +34,7 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     bid_price      = "${var.spot_price}"
     instance_count = "${var.worker_count}"
     instance_role  = "CORE"
-    instance_type  = "m3.xlarge"
+    instance_type  = "m4.xlarge"
     name           = "EmrGeoTrellisZeppelin-CoreGroup"
   }
 
@@ -54,6 +54,30 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
   # Spark YARN config to S3 for the ECS cluster to grab.
   provisioner "remote-exec" {
     # Necessary to massage settings the way AWS wants them.
+    connection {
+      type        = "ssh"
+      user        = "hadoop"
+      host        = "${aws_emr_cluster.emr-spark-cluster.master_public_dns}"
+      private_key = "${file("${var.pem_path}")}"
+    }
+  }
+
+  provisioner "file" {
+    source      = "bootstrap.sh"
+    destination = "/tmp/bootstrap.sh"
+    connection {
+      type        = "ssh"
+      user        = "hadoop"
+      host        = "${aws_emr_cluster.emr-spark-cluster.master_public_dns}"
+      private_key = "${file("${var.pem_path}")}"
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline=[
+      "chmod +x /tmp/bootstrap.sh",
+      "/tmp/bootstrap.sh ${var.rpms_uri} ${var.rpms_version}"
+    ]
     connection {
       type        = "ssh"
       user        = "hadoop"

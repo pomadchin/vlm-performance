@@ -36,6 +36,7 @@ _SUCCESS
 .vagrant
 
 .terraform
+.terraform*
 scripts/emr/terraform/variables.tf*
 scripts/emr/terraform/terraform.tfstate*
 
