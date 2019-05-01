@@ -23,13 +23,18 @@ resolvers ++= Seq(
   "locationtech-snapshots" at "https://repo.locationtech.org/content/groups/snapshots"
  )
 
+outputStrategy := Some(StdoutOutput)
+
+addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.0" cross CrossVersion.binary)
+addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
+
 fork := true
 
 libraryDependencies ++= Seq(
   "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.13.0",
   "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.13.0",
-  "org.apache.spark"      %% "spark-core"              % "2.4.0",
-  "org.apache.spark"      %% "spark-sql"               % "2.4.0",
+  "org.apache.spark"      %% "spark-core"              % "2.4.2",
+  "org.apache.spark"      %% "spark-sql"               % "2.4.2",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
 )
 

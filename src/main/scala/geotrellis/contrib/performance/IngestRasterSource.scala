@@ -17,9 +17,7 @@
 package geotrellis.contrib.performance
 
 import geotrellis.contrib.performance.conf.GDALEnabled
-import geotrellis.contrib.vlm.{RasterRegion, RasterSource}
-import geotrellis.contrib.vlm.gdal.GDALRasterSource
-import geotrellis.contrib.vlm.geotiff.GeoTiffRasterSource
+import geotrellis.contrib.vlm._
 import geotrellis.contrib.vlm.spark.{RasterSummary, SpatialPartitioner}
 import geotrellis.proj4._
 import geotrellis.raster.MultibandTile
@@ -30,14 +28,15 @@ import geotrellis.spark.io.s3._
 import geotrellis.spark.io.index.ZCurveKeyIndexMethod
 import geotrellis.spark.pyramid.Pyramid
 import geotrellis.spark.tiling.{LayoutLevel, ZoomedLayoutScheme}
-import geotrellis.spark.util.SparkUtils
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 
 object IngestRasterSource {
+  import geotrellis.contrib.vlm.avro._
+
   def main(args: Array[String]): Unit = {
-    implicit val sc: SparkContext = SparkUtils.createSparkContext("IngestRasterSource", new SparkConf(true))
+    implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
@@ -63,7 +62,7 @@ object IngestRasterSource {
     val (metadata, _) = summary.toTileLayerMetadata(layoutLevel)
     val contextRDD: MultibandTileLayerRDD[SpatialKey] = ContextRDD(tileRDD, metadata)
 
-    val attributeStore = S3AttributeStore(catalogPath)
+    val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>

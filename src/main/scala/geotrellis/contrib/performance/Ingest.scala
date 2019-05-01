@@ -25,7 +25,6 @@ import geotrellis.spark.io.s3._
 import geotrellis.spark.io.index.ZCurveKeyIndexMethod
 import geotrellis.spark.pyramid.Pyramid
 import geotrellis.spark.tiling._
-import geotrellis.spark.util.SparkUtils
 import geotrellis.vector._
 
 import org.apache.spark.{SparkConf, SparkContext}
@@ -33,7 +32,7 @@ import org.apache.spark.rdd.RDD
 
 object Ingest {
   def main(args: Array[String]): Unit = {
-    implicit val sc: SparkContext = SparkUtils.createSparkContext("Ingest", new SparkConf(true))
+    implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
@@ -48,7 +47,7 @@ object Ingest {
       MultibandTileLayerRDD(tiled, rasterMetaData)
         .reproject(targetCRS, layoutScheme, method)
 
-    val attributeStore = S3AttributeStore(catalogPath)
+    val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>

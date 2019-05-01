@@ -16,18 +16,22 @@
 
 package geotrellis.contrib
 
-import com.amazonaws.services.s3.{AmazonS3ClientBuilder, AmazonS3URI}
 import geotrellis.contrib.performance.conf.GDALEnabled
 import geotrellis.contrib.vlm.RasterSource
 import geotrellis.contrib.vlm.config.S3Config
 import geotrellis.contrib.vlm.gdal.GDALRasterSource
 import geotrellis.contrib.vlm.geotiff.GeoTiffRasterSource
 import geotrellis.spark.io.s3.AmazonS3Client
+import geotrellis.spark.util.SparkUtils.createSparkConf
+
+import org.apache.spark.{SparkConf, SparkContext}
+import com.amazonaws.services.s3.{AmazonS3ClientBuilder, AmazonS3URI}
 
 package object performance extends Serializable {
   val nlcdPath    = "s3://geotrellis-test/nlcd-geotiff"
   val nlcdURI     = new AmazonS3URI(nlcdPath)
   val catalogPath = "s3://geotrellis-test/rastersource-performance/"
+  val catalogURI  = new AmazonS3URI(catalogPath)
 
   @transient lazy val s3Client: AmazonS3Client =
     if (S3Config.allowGlobalRead) {
@@ -44,8 +48,22 @@ package object performance extends Serializable {
       new AmazonS3Client(client)
     }
 
-  lazy val nlcdPaths: List[String] = s3Client.listKeys(nlcdURI.getBucket, nlcdURI.getKey).toList
+  lazy val nlcdPaths: List[String] =
+    s3Client
+      .listKeys(nlcdURI.getBucket, nlcdURI.getKey)
+      .toList
+      .map { key => s"s3://geotrellis-test/$key" }
 
   def getRasterSource(uri: String): RasterSource =
     if(GDALEnabled.enabled) GDALRasterSource(uri) else GeoTiffRasterSource(uri)
+
+  def createSparkContext(appName: String, sparkConf: SparkConf = createSparkConf): SparkContext = {
+    sparkConf
+      .setAppName(appName)
+      .setIfMissing("spark.master", "local[*]")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryo.registrator", classOf[geotrellis.spark.io.kryo.KryoRegistrator].getName)
+
+    new SparkContext(sparkConf)
+  }
 }
