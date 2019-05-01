@@ -53,3 +53,4 @@ else
     sudo cp /tmp/local.conf /etc/ld.so.conf.d/local.conf
     sudo ldconfig
     rm -f /tmp/local.conf
+fi

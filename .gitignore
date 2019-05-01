@@ -35,6 +35,7 @@ _SUCCESS
 *.sublime-*
 .vagrant
 
+*last-step-id.txt
 .terraform
 .terraform*
 scripts/emr/terraform/variables.tf*
