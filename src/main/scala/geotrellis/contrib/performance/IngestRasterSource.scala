@@ -36,10 +36,16 @@ object IngestRasterSource {
   import geotrellis.contrib.vlm.avro._
 
   def main(args: Array[String]): Unit = {
-    val (paths, tpe) = args.toList match {
-      case "ned" :: Nil => (nedPaths, "ned")
-      case _            => (nlcdPaths, "nlcd")
+    val (paths, tpe, gdalEnabled) = args.toList match {
+      case "ned" :: "gdal" :: Nil  => (nedPaths, "ned", true)
+      case "nlcd" :: "gdal" :: Nil => (nlcdPaths, "nlcd", true)
+      case "ned" :: str :: Nil     => (nedPaths, "ned", false)
+      case "nlcd" :: str :: Nil    => (nlcdPaths, "nlcd", false)
+      case "ned" :: Nil            => (nedPaths, "ned", GDALEnabled.enabled)
+      case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
+
+    val layerName = s"$tpe-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
@@ -49,7 +55,7 @@ object IngestRasterSource {
     // read sources
     val sourceRDD: RDD[RasterSource] =
       sc.parallelize(paths, paths.length)
-        .map(uri => getRasterSource(uri).reproject(targetCRS, method).convert(DoubleCellType): RasterSource)
+        .map(uri => getRasterSource(uri, gdalEnabled).reproject(targetCRS, method).convert(DoubleCellType): RasterSource)
         .cache()
 
     // collect raster summary
@@ -72,7 +78,7 @@ object IngestRasterSource {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"$tpe-rastersource-${GDALEnabled.name}", z)
+      val layerId = LayerId(layerName, z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
     }

@@ -37,6 +37,8 @@ object Ingest {
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
+    val layerName = s"$tpe-rastersource-avro"
+
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
@@ -57,7 +59,7 @@ object Ingest {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"$tpe-rastersource-avro", z)
+      val layerId = LayerId(layerName, z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
     }

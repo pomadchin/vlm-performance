@@ -78,7 +78,7 @@ spark-submit,--master,yarn-cluster,\
 ${S3_URI},ned\
 ] | cut -f2 | tee last-step-id.txt
 
-ingest-rastersource-ned:
+ingest-rastersource-ned-gdal:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
 --steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
 spark-submit,--master,yarn-cluster,\
@@ -90,7 +90,22 @@ spark-submit,--master,yarn-cluster,\
 --num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
-${S3_URI},ned\
+${S3_URI},ned,gdal\
+] | cut -f2 | tee last-step-id.txt
+
+ingest-rastersource-ned-geotiff:
+	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
+--steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
+spark-submit,--master,yarn-cluster,\
+--class,geotrellis.contrib.performance.IngestRasterSource,\
+--driver-memory,4200M,\
+--driver-cores,2,\
+--executor-memory,4200M,\
+--executor-cores,1,\
+--num-executors,200,\
+--conf,spark.yarn.executor.memoryOverhead=700,\
+--conf,spark.yarn.driver.memoryOverhead=700,\
+${S3_URI},ned,geotiff\
 ] | cut -f2 | tee last-step-id.txt
 
 ingest-nlcd:
@@ -102,13 +117,13 @@ spark-submit,--master,yarn-cluster,\
 --driver-cores,2,\
 --executor-memory,1500M,\
 --executor-cores,1,\
---num-executors,200,\
+--num-executors,20,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
-${S3_URI},ned\
+${S3_URI},nlcd\
 ] | cut -f2 | tee last-step-id.txt
 
-ingest-rastersource-nlcd:
+ingest-rastersource-nlcd-gdal:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
 --steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
 spark-submit,--master,yarn-cluster,\
@@ -117,8 +132,23 @@ spark-submit,--master,yarn-cluster,\
 --driver-cores,2,\
 --executor-memory,4200M,\
 --executor-cores,1,\
---num-executors,200,\
+--num-executors,20,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
-${S3_URI},ned\
+${S3_URI},nlcd,gdal\
+] | cut -f2 | tee last-step-id.txt
+
+ingest-rastersource-nlcd-geotiff:
+	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
+--steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
+spark-submit,--master,yarn-cluster,\
+--class,geotrellis.contrib.performance.IngestRasterSource,\
+--driver-memory,4200M,\
+--driver-cores,2,\
+--executor-memory,4200M,\
+--executor-cores,1,\
+--num-executors,20,\
+--conf,spark.yarn.executor.memoryOverhead=700,\
+--conf,spark.yarn.driver.memoryOverhead=700,\
+${S3_URI},nlcd,geotiff\
 ] | cut -f2 | tee last-step-id.txt

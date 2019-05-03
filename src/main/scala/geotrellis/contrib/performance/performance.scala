@@ -63,8 +63,8 @@ package object performance extends Serializable {
       .toList
       .map { key => s"s3://azavea-datahub/$key" }
 
-  def getRasterSource(uri: String): RasterSource =
-    if(GDALEnabled.enabled) GDALRasterSource(uri) else GeoTiffRasterSource(uri)
+  def getRasterSource(uri: String, gdalEnabled: Boolean = GDALEnabled.enabled): RasterSource =
+    if(gdalEnabled) GDALRasterSource(uri) else GeoTiffRasterSource(uri)
 
   def createSparkContext(appName: String, sparkConf: SparkConf = createSparkConf): SparkContext = {
     sparkConf
