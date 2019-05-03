@@ -36,6 +36,11 @@ object IngestRasterSource {
   import geotrellis.contrib.vlm.avro._
 
   def main(args: Array[String]): Unit = {
+    val (paths, tpe) = args.toList match {
+      case "ned" :: Nil => (nedPaths, "ned")
+      case _            => (nlcdPaths, "nlcd")
+    }
+
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
@@ -43,7 +48,7 @@ object IngestRasterSource {
 
     // read sources
     val sourceRDD: RDD[RasterSource] =
-      sc.parallelize(nedPaths, nedPaths.length)
+      sc.parallelize(paths, paths.length)
         .map(uri => getRasterSource(uri).reproject(targetCRS, method).convert(DoubleCellType): RasterSource)
         .cache()
 
@@ -67,7 +72,7 @@ object IngestRasterSource {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"ned-rastersource-${GDALEnabled.name}", z)
+      val layerId = LayerId(s"$tpe-rastersource-${GDALEnabled.name}", z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
     }

@@ -32,13 +32,18 @@ import org.apache.spark.rdd.RDD
 
 object Ingest {
   def main(args: Array[String]): Unit = {
+    val (bucket, key, tpe) = args.toList match {
+      case "ned" :: Nil => (nedURI.getBucket, nedURI.getKey, "ned")
+      case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
+    }
+
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
 
     val inputRdd: RDD[(ProjectedExtent, MultibandTile)] =
-      S3GeoTiffRDD.spatialMultiband(nedURI.getBucket, nedURI.getKey)
+      S3GeoTiffRDD.spatialMultiband(bucket, key)
 
     val (_, rasterMetaData) = TileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
 
@@ -52,7 +57,7 @@ object Ingest {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"ned-rastersource-avro", z)
+      val layerId = LayerId(s"$tpe-rastersource-avro", z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
     }

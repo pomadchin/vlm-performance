@@ -63,7 +63,7 @@ upload-assembly: ${ASSEMBLY}
 upload-assembly-s3: ${ASSEMBLY}
 	aws s3 cp ${ASSEMBLY} ${S3_URI}
 
-ingest:
+ingest-ned:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
 --steps Type=CUSTOM_JAR,Name="Ingest",Jar=command-runner.jar,Args=[\
 spark-submit,--master,yarn-cluster,\
@@ -75,12 +75,10 @@ spark-submit,--master,yarn-cluster,\
 --num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
-${S3_URI}\
+${S3_URI},ned\
 ] | cut -f2 | tee last-step-id.txt
 
-# --conf,spark.dynamicAllocation.enabled=true,\
-
-ingest-rastersource:
+ingest-rastersource-ned:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
 --steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
 spark-submit,--master,yarn-cluster,\
@@ -92,5 +90,35 @@ spark-submit,--master,yarn-cluster,\
 --num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
-${S3_URI}\
+${S3_URI},ned\
+] | cut -f2 | tee last-step-id.txt
+
+ingest-nlcd:
+	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
+--steps Type=CUSTOM_JAR,Name="Ingest",Jar=command-runner.jar,Args=[\
+spark-submit,--master,yarn-cluster,\
+--class,geotrellis.contrib.performance.Ingest,\
+--driver-memory,4200M,\
+--driver-cores,2,\
+--executor-memory,1500M,\
+--executor-cores,1,\
+--num-executors,200,\
+--conf,spark.yarn.executor.memoryOverhead=700,\
+--conf,spark.yarn.driver.memoryOverhead=700,\
+${S3_URI},ned\
+] | cut -f2 | tee last-step-id.txt
+
+ingest-rastersource-nlcd:
+	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
+--steps Type=CUSTOM_JAR,Name="Ingest RasterSource",Jar=command-runner.jar,Args=[\
+spark-submit,--master,yarn-cluster,\
+--class,geotrellis.contrib.performance.IngestRasterSource,\
+--driver-memory,4200M,\
+--driver-cores,2,\
+--executor-memory,4200M,\
+--executor-cores,1,\
+--num-executors,200,\
+--conf,spark.yarn.executor.memoryOverhead=700,\
+--conf,spark.yarn.driver.memoryOverhead=700,\
+${S3_URI},ned\
 ] | cut -f2 | tee last-step-id.txt
