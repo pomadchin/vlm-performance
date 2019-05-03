@@ -17,7 +17,7 @@
 package geotrellis.contrib.performance
 
 import geotrellis.proj4._
-import geotrellis.raster.MultibandTile
+import geotrellis.raster.{DoubleCellType, MultibandTile}
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -37,7 +37,8 @@ object Ingest {
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
 
-    val inputRdd: RDD[(ProjectedExtent, MultibandTile)] = S3GeoTiffRDD.spatialMultiband(nlcdURI.getBucket, nlcdURI.getKey)
+    val inputRdd: RDD[(ProjectedExtent, MultibandTile)] =
+      S3GeoTiffRDD.spatialMultiband(nedURI.getBucket, nedURI.getKey)
 
     val (_, rasterMetaData) = TileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
 
@@ -51,9 +52,9 @@ object Ingest {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"nlcd-rastersource-avro", z)
+      val layerId = LayerId(s"ned-rastersource-avro", z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
-      writer.write(layerId, rdd, ZCurveKeyIndexMethod)
+      writer.write(layerId, rdd.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
     }
   }
 }

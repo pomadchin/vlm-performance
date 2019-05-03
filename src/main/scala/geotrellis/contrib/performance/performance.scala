@@ -33,6 +33,9 @@ package object performance extends Serializable {
   val catalogPath = "s3://geotrellis-test/rastersource-performance/"
   val catalogURI  = new AmazonS3URI(catalogPath)
 
+  val nedPath     = "s3://azavea-datahub/raw/ned-13arcsec-geotiff"
+  val nedURI      = new AmazonS3URI(nedPath)
+
   @transient lazy val s3Client: AmazonS3Client =
     if (S3Config.allowGlobalRead) {
       val builder = AmazonS3ClientBuilder
@@ -53,6 +56,12 @@ package object performance extends Serializable {
       .listKeys(nlcdURI.getBucket, nlcdURI.getKey)
       .toList
       .map { key => s"s3://geotrellis-test/$key" }
+
+  lazy val nedPaths: List[String] =
+    s3Client
+      .listKeys(nedURI.getBucket, nedURI.getKey)
+      .toList
+      .map { key => s"s3://azavea-datahub/$key" }
 
   def getRasterSource(uri: String): RasterSource =
     if(GDALEnabled.enabled) GDALRasterSource(uri) else GeoTiffRasterSource(uri)

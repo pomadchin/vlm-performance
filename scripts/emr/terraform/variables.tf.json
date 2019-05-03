@@ -36,7 +36,7 @@
       "description": "The bid price for each EMR spot instance"
     },
     "worker_count": {
-      "default": "2",
+      "default": "50",
       "description": "The number of worker nodes to provision"
     },
     "user": {

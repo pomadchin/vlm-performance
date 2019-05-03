@@ -20,7 +20,7 @@ import geotrellis.contrib.performance.conf.GDALEnabled
 import geotrellis.contrib.vlm._
 import geotrellis.contrib.vlm.spark.{RasterSummary, SpatialPartitioner}
 import geotrellis.proj4._
-import geotrellis.raster.MultibandTile
+import geotrellis.raster.{DoubleCellType, MultibandTile}
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -43,8 +43,8 @@ object IngestRasterSource {
 
     // read sources
     val sourceRDD: RDD[RasterSource] =
-      sc.parallelize(nlcdPaths, nlcdPaths.length)
-        .map(uri => getRasterSource(uri).reproject(targetCRS, method): RasterSource)
+      sc.parallelize(nedPaths, nedPaths.length)
+        .map(uri => getRasterSource(uri).reproject(targetCRS, method).convert(DoubleCellType): RasterSource)
         .cache()
 
     // collect raster summary
@@ -53,6 +53,7 @@ object IngestRasterSource {
     val tiledLayoutSource = sourceRDD.map(_.tileToLayout(layout, method))
 
     // Create RDD of references, references contain information how to read rasters
+    // should keyedRasterRegions() deal with segment layouts (?)
     val rasterRefRdd: RDD[(SpatialKey, RasterRegion)] = tiledLayoutSource.flatMap(_.keyedRasterRegions())
     val tileRDD: RDD[(SpatialKey, MultibandTile)] =
       rasterRefRdd // group by keys and distribute raster references using SpatialPartitioner
@@ -66,7 +67,7 @@ object IngestRasterSource {
     val writer = S3LayerWriter(attributeStore)
 
     Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>
-      val layerId = LayerId(s"nlcd-rastersource-${GDALEnabled.name}", z)
+      val layerId = LayerId(s"ned-rastersource-${GDALEnabled.name}", z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
     }

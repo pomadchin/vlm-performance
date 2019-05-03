@@ -4,7 +4,7 @@ ASSEMBLY := ../../target/scala-2.11/vlm-performance-assembly-${VLM_TEST_VERSION}
 S3_URI := s3://geotrellis-test/rastersource-performance/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
 
 ${ASSEMBLY}: $(call rwildcard, ../../src, *.scala) ../../build.sbt
-	cd ../../; ./sbt spark-etl/assembly -no-colors
+	cd ../../; ./sbt assembly -no-colors
 	@touch -m ${ASSEMBLY}
 
 ifndef CLUSTER_ID
@@ -60,7 +60,7 @@ upload-assembly: ${ASSEMBLY}
 	cd terraform; aws emr put --cluster-id ${CLUSTER_ID} --key-pair-file ${KEY_PAIR_FILE} \
 	--src ../${ASSEMBLY} --dest /tmp/vlm-performance-assembly-${GEOTRELLIS_VERSION}${GEOTRELLIS_VERSION_SUFFIX}.jar
 
-upload-assembly-s3:
+upload-assembly-s3: ${ASSEMBLY}
 	aws s3 cp ${ASSEMBLY} ${S3_URI}
 
 ingest:
@@ -70,13 +70,15 @@ spark-submit,--master,yarn-cluster,\
 --class,geotrellis.contrib.performance.Ingest,\
 --driver-memory,4200M,\
 --driver-cores,2,\
---executor-memory,4200M,\
---executor-cores,2,\
---conf,spark.dynamicAllocation.enabled=true,\
+--executor-memory,1500M,\
+--executor-cores,1,\
+--num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
 ${S3_URI}\
 ] | cut -f2 | tee last-step-id.txt
+
+# --conf,spark.dynamicAllocation.enabled=true,\
 
 ingest-rastersource:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \
@@ -86,8 +88,8 @@ spark-submit,--master,yarn-cluster,\
 --driver-memory,4200M,\
 --driver-cores,2,\
 --executor-memory,4200M,\
---executor-cores,2,\
---conf,spark.dynamicAllocation.enabled=true,\
+--executor-cores,1,\
+--num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
 --conf,spark.yarn.driver.memoryOverhead=700,\
 ${S3_URI}\
