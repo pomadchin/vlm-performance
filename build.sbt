@@ -67,8 +67,8 @@ import sbtlighter._
 LighterPlugin.disable
 
 lazy val Ingest = config("ingest")
-lazy val IngestRasterSource = config("ingest-raster-source")
-lazy val IngestRasterSourceV1 = config("ingest-raster-source-v1")
+lazy val IngestRasterSource = config("ingestRasterSource")
+lazy val IngestRasterSourceV1 = config("ingestRasterSourceV1")
 
 lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkEmrRelease := "emr-5.23.0",
@@ -117,10 +117,12 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   )
 )
 
+
+addCommandAlias("ingest-ned", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest ned")
+addCommandAlias("ingest-nlcd", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest nlcd")
 inConfig(Ingest)(EMRSettings ++ Seq(
-  (mainClass in Compile) := Some("geotrellis.contrib.performance.Ingest"),
   sparkSubmitConfs := Map(
-    "spark.driver.memory" -> "4200M", 
+    "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
     "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
@@ -129,24 +131,30 @@ inConfig(Ingest)(EMRSettings ++ Seq(
   )
 ))
 
+addCommandAlias("ingest-raster-source-ned-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned geotiff")
+addCommandAlias("ingest-raster-source-nlcd-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd geotiff")
+addCommandAlias("ingest-raster-source-ned-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned gdal")
+addCommandAlias("ingest-raster-source-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd gdal")
 inConfig(IngestRasterSource)(EMRSettings ++ Seq(
-  (mainClass in Compile) := Some("geotrellis.contrib.performance.IngestRasterSource"),
   sparkSubmitConfs := Map(
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4200M",
+    "spark.executor.memory" -> "4500M",
     "spark.executor.cores" -> "1",
     "spark.yarn.driver.memoryOverhead" -> "700",
     "spark.yarn.executor.memoryOverhead" -> "700"
   )
 ))
 
+addCommandAlias("ingest-raster-source-v1-ned-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 ned geotiff")
+addCommandAlias("ingest-raster-source-v1-nlcd-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 nlcd geotiff")
+addCommandAlias("ingest-raster-source-v1-ned-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 ned gdal")
+addCommandAlias("ingest-raster-source-v1-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 nlcd gdal")
 inConfig(IngestRasterSourceV1)(EMRSettings ++ Seq(
-  (mainClass in Compile) := Some("geotrellis.contrib.performance.IngestRasterSourceV1"),
   sparkSubmitConfs := Map(
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4200M",
+    "spark.executor.memory" -> "4500M",
     "spark.executor.cores" -> "1",
     "spark.yarn.driver.memoryOverhead" -> "700",
     "spark.yarn.executor.memoryOverhead" -> "700"

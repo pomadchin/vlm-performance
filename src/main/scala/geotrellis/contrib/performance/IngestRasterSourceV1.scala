@@ -45,7 +45,7 @@ object IngestRasterSourceV1 {
       case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
 
-    val layerName = s"$tpe-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
+    val layerName = s"$tpe-v2-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
