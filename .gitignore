@@ -40,6 +40,7 @@ _SUCCESS
 .terraform*
 scripts/emr/terraform/variables.tf*
 scripts/emr/terraform/terraform.tfstate*
+.cluster_id
 
 lib
 index.html

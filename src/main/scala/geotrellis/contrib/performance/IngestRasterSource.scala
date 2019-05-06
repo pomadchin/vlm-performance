@@ -18,7 +18,7 @@ package geotrellis.contrib.performance
 
 import geotrellis.contrib.performance.conf.GDALEnabled
 import geotrellis.contrib.vlm._
-import geotrellis.contrib.vlm.spark.{RasterSummary, SpatialPartitioner}
+import geotrellis.contrib.vlm.spark.{RasterSourceRDD, RasterSummary, SpatialPartitioner}
 import geotrellis.proj4._
 import geotrellis.raster.{DoubleCellType, MultibandTile}
 import geotrellis.raster.resample.Bilinear
@@ -28,7 +28,6 @@ import geotrellis.spark.io.s3._
 import geotrellis.spark.io.index.ZCurveKeyIndexMethod
 import geotrellis.spark.pyramid.Pyramid
 import geotrellis.spark.tiling.{LayoutLevel, ZoomedLayoutScheme}
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 
@@ -45,34 +44,21 @@ object IngestRasterSource {
       case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
 
-    val layerName = s"$tpe-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
+    val layerName = s"$tpe-v2-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
 
-    // read sources
     val sourceRDD: RDD[RasterSource] =
       sc.parallelize(paths, paths.length)
         .map(uri => getRasterSource(uri, gdalEnabled).reproject(targetCRS, method).convert(DoubleCellType): RasterSource)
         .cache()
 
-    // collect raster summary
     val summary = RasterSummary.fromRDD[RasterSource, Long](sourceRDD)
-    val layoutLevel @ LayoutLevel(zoom, layout) = summary.levelFor(layoutScheme)
-    val tiledLayoutSource = sourceRDD.map(_.tileToLayout(layout, method))
-
-    // Create RDD of references, references contain information how to read rasters
-    // should keyedRasterRegions() deal with segment layouts (?)
-    val rasterRefRdd: RDD[(SpatialKey, RasterRegion)] = tiledLayoutSource.flatMap(_.keyedRasterRegions())
-    val tileRDD: RDD[(SpatialKey, MultibandTile)] =
-      rasterRefRdd // group by keys and distribute raster references using SpatialPartitioner
-        .groupByKey(SpatialPartitioner(summary.estimatePartitionsNumber))
-        .mapValues { iter => MultibandTile(iter.flatMap(_.raster.toSeq.flatMap(_.tile.bands))) } // read rasters
-
-    val (metadata, _) = summary.toTileLayerMetadata(layoutLevel)
-    val contextRDD: MultibandTileLayerRDD[SpatialKey] = ContextRDD(tileRDD, metadata)
+    val LayoutLevel(zoom, layout) = summary.levelFor(layoutScheme)
+    val contextRDD = RasterSourceRDD.tiledLayerRDD(sourceRDD, layout)
 
     val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)

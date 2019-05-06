@@ -37,7 +37,7 @@ object Ingest {
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
-    val layerName = s"$tpe-rastersource-avro"
+    val layerName = s"$tpe-v2-rastersource-avro"
 
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator
