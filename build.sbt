@@ -68,6 +68,7 @@ LighterPlugin.disable
 
 lazy val Ingest = config("ingest")
 lazy val IngestRasterSource = config("ingest-raster-source")
+lazy val IngestRasterSourceV1 = config("ingest-raster-source-v1")
 
 lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkEmrRelease := "emr-5.23.0",
@@ -130,6 +131,18 @@ inConfig(Ingest)(EMRSettings ++ Seq(
 
 inConfig(IngestRasterSource)(EMRSettings ++ Seq(
   (mainClass in Compile) := Some("geotrellis.contrib.performance.IngestRasterSource"),
+  sparkSubmitConfs := Map(
+    "spark.driver.memory" -> "4200M",
+    "spark.driver.cores" -> "2",
+    "spark.executor.memory" -> "4200M",
+    "spark.executor.cores" -> "1",
+    "spark.yarn.driver.memoryOverhead" -> "700",
+    "spark.yarn.executor.memoryOverhead" -> "700"
+  )
+))
+
+inConfig(IngestRasterSourceV1)(EMRSettings ++ Seq(
+  (mainClass in Compile) := Some("geotrellis.contrib.performance.IngestRasterSourceV1"),
   sparkSubmitConfs := Map(
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
