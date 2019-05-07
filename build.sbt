@@ -75,20 +75,22 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkAwsRegion := "us-east-1",
   sparkEmrApplications := Seq("Hadoop", "Spark", "Ganglia", "Zeppelin"),
   sparkEmrBootstrap := List(
-    // using us buildings bootstrap
     BootstrapAction("Install GDAL + dependencies",
       "s3://geotrellis-test/usbuildings/bootstrap.sh",
       "s3://geotrellis-test/usbuildings",
-      "v1.0")),
+      "v1.0")
+  ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 51,
-  sparkMasterType := "m4.xlarge",
-  sparkCoreType := "m4.xlarge",
-  sparkMasterPrice := Some(0.1),
-  sparkCorePrice := Some(0.1),
+  sparkInstanceCount := 26,
+  sparkMasterType := "i3.xlarge",
+  sparkCoreType := "i3.xlarge",
+  sparkMasterPrice := Some(0.2),
+  sparkCorePrice := Some(0.2),
   sparkClusterName := "GeoTrellis VLM Performance",
   sparkEmrServiceRole := "EMR_DefaultRole",
   sparkInstanceRole := "EMR_EC2_DefaultRole",
+  sparkMasterEbsSize := None, // Some(64)
+  sparkCoreEbsSize := None, // Some(64)
   sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value.withEc2KeyName("geotrellis-emr"),
   sparkS3LogUri := Some("s3://geotrellis-test/rastersource-performance/logs"),
   sparkEmrConfigs := List(
@@ -96,15 +98,14 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
       "maximizeResourceAllocation" -> "true"
     ),
     EmrConfig("spark-defaults").withProperties(
-      "spark.driver.maxResultSize" -> "3G",
+      "spark.driver.maxResultSize" -> "4200M",
       "spark.dynamicAllocation.enabled" -> "true",
       "spark.shuffle.service.enabled" -> "true",
       "spark.shuffle.compress" -> "true",
       "spark.shuffle.spill.compress" -> "true",
       "spark.rdd.compress" -> "true",
-      "spark.driver.extraJavaOptions" -> "-Djava.library.path=/usr/local/lib",
-      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -Dgeotrellis.s3.threads.rdd.write=64 -Djava.library.path=/usr/local/lib",
-      "spark.executorEnv.LD_LIBRARY_PATH" -> "/usr/local/lib"
+      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64",
+      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64"
     ),
     EmrConfig("spark-env").withProperties(
       "LD_LIBRARY_PATH" -> "/usr/local/lib"
@@ -117,17 +118,20 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   )
 )
 
-
+addCommandAlias("create-cluster", "ingest:sparkCreateCluster")
 addCommandAlias("ingest-ned", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest ned")
 addCommandAlias("ingest-nlcd", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest nlcd")
 inConfig(Ingest)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
+    "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
     "spark.executor.memory" -> "1500M",
-    "spark.executor.cores" -> "1",
-    "spark.yarn.driver.memoryOverhead" -> "700",
-    "spark.yarn.executor.memoryOverhead" -> "700"
+    "spark.executor.cores" -> "1"/*,
+    "spark.dynamicAllocation.enabled" -> "false",
+    "spark.executor.instances" -> "200",
+    "spark.dynamicAllocation.minExecutors" -> "200",
+    "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
 ))
 
@@ -137,12 +141,15 @@ addCommandAlias("ingest-raster-source-ned-gdal", "ingest:sparkSubmitMain geotrel
 addCommandAlias("ingest-raster-source-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd gdal")
 inConfig(IngestRasterSource)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
+    "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
     "spark.executor.memory" -> "4500M",
-    "spark.executor.cores" -> "1",
-    "spark.yarn.driver.memoryOverhead" -> "700",
-    "spark.yarn.executor.memoryOverhead" -> "700"
+    "spark.executor.cores" -> "1"/*,
+    "spark.dynamicAllocation.enabled" -> "false",
+    "spark.executor.instances" -> "200",
+    "spark.dynamicAllocation.minExecutors" -> "200",
+    "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
 ))
 
@@ -152,11 +159,14 @@ addCommandAlias("ingest-raster-source-v1-ned-gdal", "ingest:sparkSubmitMain geot
 addCommandAlias("ingest-raster-source-v1-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 nlcd gdal")
 inConfig(IngestRasterSourceV1)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
+    "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
     "spark.executor.memory" -> "4500M",
-    "spark.executor.cores" -> "1",
-    "spark.yarn.driver.memoryOverhead" -> "700",
-    "spark.yarn.executor.memoryOverhead" -> "700"
+    "spark.executor.cores" -> "1"/*,
+    "spark.dynamicAllocation.enabled" -> "false",
+    "spark.executor.instances" -> "200",
+    "spark.dynamicAllocation.minExecutors" -> "200",
+    "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
 ))

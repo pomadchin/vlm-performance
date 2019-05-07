@@ -38,13 +38,13 @@ object IngestRasterSource {
     val (paths, tpe, gdalEnabled) = args.toList match {
       case "ned" :: "gdal" :: Nil  => (nedPaths, "ned", true)
       case "nlcd" :: "gdal" :: Nil => (nlcdPaths, "nlcd", true)
-      case "ned" :: str :: Nil     => (nedPaths, "ned", false)
-      case "nlcd" :: str :: Nil    => (nlcdPaths, "nlcd", false)
+      case "ned" :: _ :: Nil       => (nedPaths, "ned", false)
+      case "nlcd" :: _ :: Nil      => (nlcdPaths, "nlcd", false)
       case "ned" :: Nil            => (nedPaths, "ned", GDALEnabled.enabled)
       case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
 
-    val layerName = s"$tpe-v2-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
+    val layerName = s"$tpe-v3-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
@@ -63,10 +63,12 @@ object IngestRasterSource {
     val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)
 
-    Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>
+    writer.write(LayerId(layerName, zoom), contextRDD, ZCurveKeyIndexMethod)
+
+    /*Pyramid.upLevels(contextRDD, layoutScheme, zoom, method) { (rdd, z) =>
       val layerId = LayerId(layerName, z)
       if(attributeStore.layerExists(layerId)) S3LayerDeleter(attributeStore).delete(layerId)
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
-    }
+    }*/
   }
 }
