@@ -28,8 +28,10 @@ import geotrellis.spark.io.s3._
 import geotrellis.spark.io.index.ZCurveKeyIndexMethod
 import geotrellis.spark.pyramid.Pyramid
 import geotrellis.spark.tiling.{LayoutLevel, ZoomedLayoutScheme}
+
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
+import cats.syntax.option._
 
 object IngestRasterSource {
   import geotrellis.contrib.vlm.avro._
@@ -44,7 +46,7 @@ object IngestRasterSource {
       case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
 
-    val layerName = s"$tpe-v3-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
+    val layerName = s"$tpe-v9-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
@@ -58,7 +60,7 @@ object IngestRasterSource {
 
     val summary = RasterSummary.fromRDD[RasterSource, Long](sourceRDD)
     val LayoutLevel(zoom, layout) = summary.levelFor(layoutScheme)
-    val contextRDD = RasterSourceRDD.tiledLayerRDD(sourceRDD, layout)
+    val contextRDD = RasterSourceRDD.tiledLayerRDD(sourceRDD, layout, rasterSummary = summary.some)
 
     val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)

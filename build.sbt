@@ -31,8 +31,8 @@ addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.f
 fork := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.13.0",
-  "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.13.0",
+  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.14.0-SNAPSHOT",
+  "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.14.0-SNAPSHOT",
   "org.apache.spark"      %% "spark-core"              % "2.4.2",
   "org.apache.spark"      %% "spark-sql"               % "2.4.2",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
@@ -68,25 +68,25 @@ LighterPlugin.disable
 
 lazy val Ingest = config("ingest")
 lazy val IngestRasterSource = config("ingestRasterSource")
-lazy val IngestRasterSourceV1 = config("ingestRasterSourceV1")
 
 lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkEmrRelease := "emr-5.23.0",
   sparkAwsRegion := "us-east-1",
   sparkEmrApplications := Seq("Hadoop", "Spark", "Ganglia", "Zeppelin"),
   sparkEmrBootstrap := List(
-    BootstrapAction("Install GDAL + dependencies",
+    BootstrapAction(
+      "Install GDAL dependencies",
       "s3://geotrellis-test/usbuildings/bootstrap.sh",
-      "s3://geotrellis-test/usbuildings",
-      "v1.0")
+      "s3://geotrellis-test/usbuildings", "v1.0"
+    )
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 26,
+  sparkInstanceCount := 51,
   sparkMasterType := "i3.xlarge",
   sparkCoreType := "i3.xlarge",
   sparkMasterPrice := Some(0.2),
   sparkCorePrice := Some(0.2),
-  sparkClusterName := "GeoTrellis VLM Performance",
+  sparkClusterName := s"GeoTrellis VLM Performance ${sys.env.getOrElse("USER", "<anonymous user>")}",
   sparkEmrServiceRole := "EMR_DefaultRole",
   sparkInstanceRole := "EMR_EC2_DefaultRole",
   sparkMasterEbsSize := None, // Some(64)
@@ -135,37 +135,21 @@ inConfig(Ingest)(EMRSettings ++ Seq(
   )
 ))
 
-addCommandAlias("ingest-raster-source-ned-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned geotiff")
-addCommandAlias("ingest-raster-source-nlcd-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd geotiff")
-addCommandAlias("ingest-raster-source-ned-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned gdal")
-addCommandAlias("ingest-raster-source-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd gdal")
+addCommandAlias("ingest-raster-source-ned-geotiff", "ingestRasterSource:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned geotiff")
+addCommandAlias("ingest-raster-source-nlcd-geotiff", "ingestRasterSource:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd geotiff")
+addCommandAlias("ingest-raster-source-ned-gdal", "ingestRasterSource:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource ned gdal")
+addCommandAlias("ingest-raster-source-nlcd-gdal", "ingestRasterSource:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSource nlcd gdal")
 inConfig(IngestRasterSource)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4500M",
-    "spark.executor.cores" -> "1"/*,
+    "spark.executor.memory" -> "1500M",
+    "spark.executor.cores" -> "1",
     "spark.dynamicAllocation.enabled" -> "false",
     "spark.executor.instances" -> "200",
-    "spark.dynamicAllocation.minExecutors" -> "200",
-    "spark.dynamicAllocation.maxExecutors" -> "200"*/
-  )
-))
-
-addCommandAlias("ingest-raster-source-v1-ned-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 ned geotiff")
-addCommandAlias("ingest-raster-source-v1-nlcd-geotiff", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 nlcd geotiff")
-addCommandAlias("ingest-raster-source-v1-ned-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 ned gdal")
-addCommandAlias("ingest-raster-source-v1-nlcd-gdal", "ingest:sparkSubmitMain geotrellis.contrib.performance.IngestRasterSourceV1 nlcd gdal")
-inConfig(IngestRasterSourceV1)(EMRSettings ++ Seq(
-  sparkSubmitConfs := Map(
-    "spark.master" -> "yarn",
-    "spark.driver.memory" -> "4200M",
-    "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4500M",
-    "spark.executor.cores" -> "1"/*,
-    "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
+    "spark.yarn.executor.memoryOverhead" -> "700",
+    "spark.yarn.driver.memoryOverhead" -> "700"/*,
     "spark.dynamicAllocation.minExecutors" -> "200",
     "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
