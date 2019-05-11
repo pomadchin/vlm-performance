@@ -16,6 +16,7 @@
 
 package geotrellis.contrib.performance
 
+import geotrellis.contrib.performance.conf.IngestVersion
 import geotrellis.proj4._
 import geotrellis.raster.{DoubleCellType, MultibandTile, Tile}
 import geotrellis.raster.resample.Bilinear
@@ -37,7 +38,7 @@ object Ingest {
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
-    val layerName = s"$tpe-v9-rastersource-avro"
+    val layerName = s"$tpe-${IngestVersion.version}-rastersource-avro"
 
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator

@@ -32,7 +32,7 @@ spark-submit,--master,yarn-cluster,\
 --class,geotrellis.contrib.performance.Ingest,\
 --driver-memory,4200M,\
 --driver-cores,2,\
---executor-memory,1500M,\
+--executor-memory,4200M,\
 --executor-cores,1,\
 --num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
@@ -47,7 +47,7 @@ spark-submit,--master,yarn-cluster,\
 --class,geotrellis.contrib.performance.IngestRasterSource,\
 --driver-memory,4200M,\
 --driver-cores,2,\
---executor-memory,4200M,\
+--executor-memory,1500M,\
 --executor-cores,1,\
 --num-executors,200,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
@@ -92,7 +92,7 @@ spark-submit,--master,yarn-cluster,\
 --class,geotrellis.contrib.performance.IngestRasterSource,\
 --driver-memory,4200M,\
 --driver-cores,2,\
---executor-memory,4200M,\
+--executor-memory,1500M,\
 --executor-cores,1,\
 --num-executors,20,\
 --conf,spark.yarn.executor.memoryOverhead=700,\
@@ -107,7 +107,7 @@ spark-submit,--master,yarn-cluster,\
 --class,geotrellis.contrib.performance.IngestRasterSource,\
 --driver-memory,4200M,\
 --driver-cores,2,\
---executor-memory,4200M,\
+--executor-memory,1500M,\
 --executor-cores,1,\
 --num-executors,20,\
 --conf,spark.yarn.executor.memoryOverhead=700,\

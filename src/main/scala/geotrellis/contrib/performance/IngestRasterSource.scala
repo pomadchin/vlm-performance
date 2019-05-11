@@ -16,7 +16,7 @@
 
 package geotrellis.contrib.performance
 
-import geotrellis.contrib.performance.conf.GDALEnabled
+import geotrellis.contrib.performance.conf.{GDALEnabled, IngestVersion}
 import geotrellis.contrib.vlm._
 import geotrellis.contrib.vlm.spark.{RasterSourceRDD, RasterSummary, SpatialPartitioner}
 import geotrellis.proj4._
@@ -46,7 +46,7 @@ object IngestRasterSource {
       case _                       => (nlcdPaths, "nlcd", GDALEnabled.enabled)
     }
 
-    val layerName = s"$tpe-v9-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
+    val layerName = s"$tpe-${IngestVersion.version}-rastersource-${if(gdalEnabled) "gdal" else "geotiff"}"
 
     implicit val sc: SparkContext = createSparkContext("IngestRasterSource", new SparkConf(true))
     val targetCRS = WebMercator
