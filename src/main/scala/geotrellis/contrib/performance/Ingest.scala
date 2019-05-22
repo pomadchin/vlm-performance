@@ -16,7 +16,6 @@
 
 package geotrellis.contrib.performance
 
-import geotrellis.contrib.performance.conf.IngestVersion
 import geotrellis.proj4._
 import geotrellis.raster.{DoubleCellType, MultibandTile, Tile}
 import geotrellis.raster.resample.Bilinear
@@ -27,9 +26,18 @@ import geotrellis.spark.io.index.ZCurveKeyIndexMethod
 import geotrellis.spark.pyramid.Pyramid
 import geotrellis.spark.tiling._
 import geotrellis.vector._
+import geotrellis.tiling._
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.http.apache.ApacheHttpClient
+import software.amazon.awssdk.core.retry._
+import software.amazon.awssdk.core.retry.conditions.{RetryCondition, OrRetryCondition}
+import software.amazon.awssdk.awscore.retry.conditions.RetryOnErrorCodeCondition
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
+
+import java.time.Duration
 
 object Ingest {
   def main(args: Array[String]): Unit = {
@@ -38,9 +46,35 @@ object Ingest {
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
-    val layerName = s"$tpe-${IngestVersion.version}-rastersource-avro"
+    val layerName = s"$tpe-s3test-avro-8"
 
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
+    S3ClientProducer.set({() =>
+      // make sure idle connections are retried https://github.com/aws/aws-sdk-java-v2/issues/1124
+      val retryPolicy = RetryPolicy.defaultRetryPolicy()
+        .toBuilder()
+        .retryCondition(
+          OrRetryCondition.create(
+            RetryCondition.defaultRetryCondition(),
+            RetryOnErrorCodeCondition.create("RequestTimeout")
+          ))
+        .build()
+
+      val overrideConfig = ClientOverrideConfiguration.builder()
+        .apiCallAttemptTimeout(Duration.ofSeconds(60))
+        .apiCallTimeout(Duration.ofSeconds(60))
+        .retryPolicy(retryPolicy)
+        .build()
+
+      val clientBuilder = ApacheHttpClient.builder()
+        .connectionTimeout(Duration.ofSeconds(60))
+        .socketTimeout(Duration.ofSeconds(60))
+
+      S3Client.builder()
+        .httpClientBuilder(clientBuilder)
+        .overrideConfiguration(overrideConfig)
+        .build()
+    })
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)

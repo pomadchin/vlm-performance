@@ -1,5 +1,5 @@
 name := "vlm-performance"
-version := "0.1.0-SNAPSHOT"
+version := "0.1.0-S3TEST"
 scalaVersion := "2.11.12"
 crossScalaVersions := Seq("2.12.8", "2.11.12")
 organization := "com.azavea"
@@ -11,6 +11,7 @@ scalacOptions ++= Seq(
   "-language:higherKinds",
   "-language:postfixOps",
   "-language:existentials",
+  "-target:jvm-1.8",
   "-feature"
 )
 
@@ -31,8 +32,7 @@ addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.f
 fork := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.14.0-SNAPSHOT",
-  "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.14.0-SNAPSHOT",
+  "org.locationtech.geotrellis" %% "geotrellis-s3"  % "3.0.1-LOCAL",
   "org.apache.spark"      %% "spark-core"              % "2.4.2",
   "org.apache.spark"      %% "spark-sql"               % "2.4.2",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
@@ -81,7 +81,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
     )
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 51,
+  sparkInstanceCount := 21,
   sparkMasterType := "i3.xlarge",
   sparkCoreType := "i3.xlarge",
   sparkMasterPrice := Some(0.2),
@@ -126,16 +126,16 @@ inConfig(Ingest)(EMRSettings ++ Seq(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4200M",
+    "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
     "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
-    "spark.yarn.executor.memoryOverhead" -> "700",
-    "spark.yarn.driver.memoryOverhead" -> "700"/*,
-    "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
-    "spark.dynamicAllocation.minExecutors" -> "200",
-    "spark.dynamicAllocation.maxExecutors" -> "200"*/
+    /*"spark.executor.instances" -> "200",*/
+    /*"spark.yarn.executor.memoryOverhead" -> "700",*/
+    /*"spark.yarn.driver.memoryOverhead" -> "700"*/
+    /*"spark.dynamicAllocation.enabled" -> "false",*/
+    /*"spark.executor.instances" -> "200",*/
+    /*"spark.dynamicAllocation.minExecutors" -> "200",*/
+    /*"spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
 ))
 
