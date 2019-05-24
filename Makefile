@@ -18,10 +18,6 @@ proxy:
 ssh:
 	aws emr ssh --cluster-id ${CLUSTER_ID} --key-pair-file ${KEY_PAIR_FILE}
 
-upload-assembly: ${ASSEMBLY}
-	cd terraform; aws emr put --cluster-id ${CLUSTER_ID} --key-pair-file ${KEY_PAIR_FILE} \
-	--src ${ASSEMBLY} --dest /tmp/vlm-performance-assembly-${GEOTRELLIS_VERSION}${GEOTRELLIS_VERSION_SUFFIX}.jar
-
 upload-assembly-s3: ${ASSEMBLY}
 	aws s3 cp ${ASSEMBLY} ${S3_URI}
 

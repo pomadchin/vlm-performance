@@ -81,7 +81,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
     )
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 51,
+  sparkInstanceCount := 21,
   sparkMasterType := "i3.xlarge",
   sparkCoreType := "i3.xlarge",
   sparkMasterPrice := Some(0.2),
@@ -95,7 +95,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkS3LogUri := Some("s3://geotrellis-test/rastersource-performance/logs"),
   sparkEmrConfigs := List(
     EmrConfig("spark").withProperties(
-      "maximizeResourceAllocation" -> "true"
+      "maximizeResourceAllocation" -> "true" // be careful with setting this param to true
     ),
     EmrConfig("spark-defaults").withProperties(
       "spark.driver.maxResultSize" -> "4200M",
@@ -126,14 +126,12 @@ inConfig(Ingest)(EMRSettings ++ Seq(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4200M",
+    "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
-    "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
+    /*"spark.dynamicAllocation.enabled" -> "false",
+    "spark.executor.instances" -> "200",*/
     "spark.yarn.executor.memoryOverhead" -> "700",
     "spark.yarn.driver.memoryOverhead" -> "700"/*,
-    "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
     "spark.dynamicAllocation.minExecutors" -> "200",
     "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
@@ -151,7 +149,7 @@ inConfig(IngestRasterSourceGDAL)(EMRSettings ++ Seq(
     "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
     "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200",
+    "spark.executor.instances" -> "200", // 70 for 20 nodes cluster
     "spark.yarn.executor.memoryOverhead" -> "700",
     "spark.yarn.driver.memoryOverhead" -> "700"/*,
     "spark.dynamicAllocation.minExecutors" -> "200",
