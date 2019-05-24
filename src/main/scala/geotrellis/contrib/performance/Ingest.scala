@@ -40,7 +40,7 @@ import java.time.Duration
 import geotrellis.spark.tiling.Tiler.Options
 
 object AWS {
-  /*S3ClientProducer.set({() =>
+  S3ClientProducer.set({() =>
     // make sure idle connections are retried https://github.com/aws/aws-sdk-java-v2/issues/1124
     val retryPolicy = RetryPolicy.defaultRetryPolicy()
       .toBuilder()
@@ -52,20 +52,20 @@ object AWS {
       .build()
 
     val overrideConfig = ClientOverrideConfiguration.builder()
-      .apiCallAttemptTimeout(Duration.ofSeconds(60))
-      .apiCallTimeout(Duration.ofSeconds(60))
+      // .apiCallAttemptTimeout(Duration.ofSeconds(60))
+      // .apiCallTimeout(Duration.ofSeconds(60))
       .retryPolicy(retryPolicy)
       .build()
 
-    val clientBuilder = ApacheHttpClient.builder()
+    /*val clientBuilder = ApacheHttpClient.builder()
       .connectionTimeout(Duration.ofSeconds(60))
-      .socketTimeout(Duration.ofSeconds(60))
+      .socketTimeout(Duration.ofSeconds(60))*/
 
     S3Client.builder()
-      .httpClientBuilder(clientBuilder)
+      // .httpClientBuilder(clientBuilder)
       .overrideConfiguration(overrideConfig)
       .build()
-  })*/
+  })
 }
 
 object Ingest {
@@ -77,7 +77,7 @@ object Ingest {
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
-    val layerName = s"$tpe-s3test-avro-23"
+    val layerName = s"$tpe-s3test-v3-avro-23"
 
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
     val targetCRS = WebMercator
@@ -97,12 +97,10 @@ object Ingest {
       MultibandTileLayerRDD(tiled, rasterMetaData)
         .reproject(targetCRS, layoutScheme, method/*, partitioner = Some(partitioner)*/)
 
-    println(s"reprojected.count: ${reprojected.count}")
+    val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
+    val writer = S3LayerWriter(attributeStore)
 
-    // val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
-    // val writer = S3LayerWriter(attributeStore)
-
-    // writer.write(LayerId(layerName, zoom), reprojected.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
+    writer.write(LayerId(layerName, zoom), reprojected.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
 
     /*Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>
       val layerId = LayerId(layerName, z)
