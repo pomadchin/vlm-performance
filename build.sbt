@@ -32,7 +32,7 @@ addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.f
 fork := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-s3"  % "3.0.1-LOCAL",
+  "org.locationtech.geotrellis" %% "geotrellis-s3"  % "3.0.1-SNAPSHOT",
   "org.apache.spark"      %% "spark-core"              % "2.4.2",
   "org.apache.spark"      %% "spark-sql"               % "2.4.2",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
@@ -94,9 +94,9 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value.withEc2KeyName("geotrellis-emr"),
   sparkS3LogUri := Some("s3://geotrellis-test/rastersource-performance/logs"),
   sparkEmrConfigs := List(
-    EmrConfig("spark").withProperties(
+    /*EmrConfig("spark").withProperties(
       "maximizeResourceAllocation" -> "true"
-    ),
+    ),*/
     EmrConfig("spark-defaults").withProperties(
       "spark.driver.maxResultSize" -> "4200M",
       "spark.dynamicAllocation.enabled" -> "true",
@@ -104,8 +104,8 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
       "spark.shuffle.compress" -> "true",
       "spark.shuffle.spill.compress" -> "true",
       "spark.rdd.compress" -> "true",
-      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64",
-      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64"
+      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -Dgeotrellis.s3.threads.rdd.write=64",
+      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -Dgeotrellis.s3.threads.rdd.write=64"
     ),
     EmrConfig("spark-env").withProperties(
       "LD_LIBRARY_PATH" -> "/usr/local/lib"
@@ -126,16 +126,16 @@ inConfig(Ingest)(EMRSettings ++ Seq(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "1500M",
+    "spark.executor.memory" -> "4200M",
     "spark.executor.cores" -> "1",
     "spark.dynamicAllocation.enabled" -> "false",
-    /*"spark.executor.instances" -> "200",*/
-    /*"spark.yarn.executor.memoryOverhead" -> "700",*/
-    /*"spark.yarn.driver.memoryOverhead" -> "700"*/
-    /*"spark.dynamicAllocation.enabled" -> "false",*/
-    /*"spark.executor.instances" -> "200",*/
-    /*"spark.dynamicAllocation.minExecutors" -> "200",*/
-    /*"spark.dynamicAllocation.maxExecutors" -> "200"*/
+    "spark.executor.instances" -> "200",
+    "spark.yarn.executor.memoryOverhead" -> "700",
+    "spark.yarn.driver.memoryOverhead" -> "700"/*,
+    "spark.dynamicAllocation.enabled" -> "false",
+    "spark.executor.instances" -> "200",
+    "spark.dynamicAllocation.minExecutors" -> "200",
+    "spark.dynamicAllocation.maxExecutors" -> "200"*/
   )
 ))
 

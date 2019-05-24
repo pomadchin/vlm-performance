@@ -30,51 +30,56 @@ import geotrellis.tiling._
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.core.retry._
-import software.amazon.awssdk.core.retry.conditions.{RetryCondition, OrRetryCondition}
+import software.amazon.awssdk.core.retry.conditions.{OrRetryCondition, RetryCondition}
 import software.amazon.awssdk.awscore.retry.conditions.RetryOnErrorCodeCondition
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
-
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
-
 import java.time.Duration
 
+import geotrellis.spark.tiling.Tiler.Options
+
+object AWS {
+  /*S3ClientProducer.set({() =>
+    // make sure idle connections are retried https://github.com/aws/aws-sdk-java-v2/issues/1124
+    val retryPolicy = RetryPolicy.defaultRetryPolicy()
+      .toBuilder()
+      .retryCondition(
+        OrRetryCondition.create(
+          RetryCondition.defaultRetryCondition(),
+          RetryOnErrorCodeCondition.create("RequestTimeout")
+        ))
+      .build()
+
+    val overrideConfig = ClientOverrideConfiguration.builder()
+      .apiCallAttemptTimeout(Duration.ofSeconds(60))
+      .apiCallTimeout(Duration.ofSeconds(60))
+      .retryPolicy(retryPolicy)
+      .build()
+
+    val clientBuilder = ApacheHttpClient.builder()
+      .connectionTimeout(Duration.ofSeconds(60))
+      .socketTimeout(Duration.ofSeconds(60))
+
+    S3Client.builder()
+      .httpClientBuilder(clientBuilder)
+      .overrideConfiguration(overrideConfig)
+      .build()
+  })*/
+}
+
 object Ingest {
+  import AWS._
+
   def main(args: Array[String]): Unit = {
     val (bucket, key, tpe) = args.toList match {
       case "ned" :: Nil => (nedURI.getBucket, nedURI.getKey, "ned")
       case _            => (nlcdURI.getBucket, nlcdURI.getKey, "nlcd")
     }
 
-    val layerName = s"$tpe-s3test-avro-8"
+    val layerName = s"$tpe-s3test-avro-23"
 
     implicit val sc: SparkContext = createSparkContext("Ingest", new SparkConf(true))
-    S3ClientProducer.set({() =>
-      // make sure idle connections are retried https://github.com/aws/aws-sdk-java-v2/issues/1124
-      val retryPolicy = RetryPolicy.defaultRetryPolicy()
-        .toBuilder()
-        .retryCondition(
-          OrRetryCondition.create(
-            RetryCondition.defaultRetryCondition(),
-            RetryOnErrorCodeCondition.create("RequestTimeout")
-          ))
-        .build()
-
-      val overrideConfig = ClientOverrideConfiguration.builder()
-        .apiCallAttemptTimeout(Duration.ofSeconds(60))
-        .apiCallTimeout(Duration.ofSeconds(60))
-        .retryPolicy(retryPolicy)
-        .build()
-
-      val clientBuilder = ApacheHttpClient.builder()
-        .connectionTimeout(Duration.ofSeconds(60))
-        .socketTimeout(Duration.ofSeconds(60))
-
-      S3Client.builder()
-        .httpClientBuilder(clientBuilder)
-        .overrideConfiguration(overrideConfig)
-        .build()
-    })
     val targetCRS = WebMercator
     val method = Bilinear
     val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
@@ -82,18 +87,22 @@ object Ingest {
     val inputRdd: RDD[(ProjectedExtent, MultibandTile)] =
       S3GeoTiffRDD.spatialMultiband(bucket, key)
 
+    // val partitioner = new HashPartitioner(inputRdd.getNumPartitions * 16)
+
     val (_, rasterMetaData) = TileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
 
-    val tiled: RDD[(SpatialKey, MultibandTile)] = inputRdd.tileToLayout(rasterMetaData.cellType, rasterMetaData.layout, Bilinear)
+    val tiled: RDD[(SpatialKey, MultibandTile)] = inputRdd.tileToLayout(rasterMetaData.cellType, rasterMetaData.layout, Bilinear /*Options(Bilinear, Some(partitioner))*/)
 
     val (zoom, reprojected): (Int, RDD[(SpatialKey, MultibandTile)] with Metadata[TileLayerMetadata[SpatialKey]]) =
       MultibandTileLayerRDD(tiled, rasterMetaData)
-        .reproject(targetCRS, layoutScheme, method)
+        .reproject(targetCRS, layoutScheme, method/*, partitioner = Some(partitioner)*/)
 
-    val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
-    val writer = S3LayerWriter(attributeStore)
+    println(s"reprojected.count: ${reprojected.count}")
 
-    writer.write(LayerId(layerName, zoom), reprojected.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
+    // val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
+    // val writer = S3LayerWriter(attributeStore)
+
+    // writer.write(LayerId(layerName, zoom), reprojected.withContext(_.mapValues(_.convert(DoubleCellType))), ZCurveKeyIndexMethod)
 
     /*Pyramid.upLevels(reprojected, layoutScheme, zoom, method) { (rdd, z) =>
       val layerId = LayerId(layerName, z)
