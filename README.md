@@ -48,22 +48,35 @@ GDAL RasterSources Ingest: `70 executors`, `1 core per executor`, `1500M` RAM pe
 
 #### 50 i3.xlarge nodes
 
+Legacy GeoTrellis Ingest: `1 core per executor`, `1500M` RAM per executor
+![Ingest](img/50/ingest-i3-50-dynalloc.png)
+
+GeoTiff RasterSources Ingest: `1 core per executor`, `1500M` RAM per executor
+![GeoTiffRasterSource](img/50/geotiff-i3-50-dynalloc.png)
+
+GDAL RasterSources Ingest: `200 executors`, `1 core per executor`, `1500M` RAM per executor, `GDAL_CACHEMAX = 1000`
+![GDALRasterSource](img/50/gdal-i3-50-1000size-200.png)
+
+#### 50 i3.xlarge nodes (max resources allocation)
+
 Legacy GeoTrellis Ingest: `max resources allocation`, `200 executors`, `1 core per executor`, `4200M` RAM per executor.
 With less RAM job is failing, maxmizing resources usage kills job as well.
-![Ingest](img/50/ingest-i3-50-4200M.png)
+![Ingest](img/50/maxResourcesAllocation/ingest-i3-50-4200M.png)
 
 GeoTiff RasterSources Ingest: `max resources allocation`, `200 executors`, `1 core per executor`, `4200M` RAM per executor
 With less RAM job is failing, maxmizing resources usage kills job as well.
-![GeoTiffRasterSource](img/50/geotiff-i3-50-4200M.png)
+![GeoTiffRasterSource](img/50/maxResourcesAllocation/geotiff-i3-50-4200M.png)
 
 GDAL RasterSources Ingest: `max resources allocation`, `200 executors`, `1 core per executor`, `1500M` RAM per executor, `GDAL_CACHEMAX = 1000`
-![GDALRasterSource](img/50/gdal-i3-50-1000size.png)
+![GDALRasterSource](img/50/maxResourcesAllocation/gdal-i3-50-1000size.png)
 
 
 ### Conclusion
 
-The new API completely replaces the old one. The two ingests are a bit different. GDAL Ingest requires a bit
-more complicated settings tuning, however, the new API is not slower and sometimes even faster.
+~~(OLD Version, is deprecated; it was written because of cluster misconfiguration (see the next section)) The new API completely replaces the old one. The two ingests are a bit different. GDAL Ingest requires a bit
+more complicated settings tuning, however, the new API is not slower and sometimes even faster.~~
+
+TO BE Updated...
 
 ### EMR maximizeResourceAllocation flag usage tip 
 
