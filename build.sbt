@@ -38,6 +38,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
 )
 
+dependencyOverrides += "com.azavea.gdal" % "gdal-warp-bindings" % "33.5523882"
+
 test in assembly := {}
 assemblyShadeRules in assembly := {
   Seq(ShadeRule.rename("shapeless.**" -> s"com.azavea.shaded.shapeless.@1").inAll)
@@ -95,7 +97,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkS3LogUri := Some("s3://geotrellis-test/rastersource-performance/logs"),
   sparkEmrConfigs := List(
     EmrConfig("spark").withProperties(
-      "maximizeResourceAllocation" -> "true" // be careful with setting this param to true
+      "maximizeResourceAllocation" -> "false" // be careful with setting this param to true
     ),
     EmrConfig("spark-defaults").withProperties(
       "spark.driver.maxResultSize" -> "4200M",
@@ -146,10 +148,10 @@ inConfig(IngestRasterSourceGDAL)(EMRSettings ++ Seq(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "1500M",
+    "spark.executor.memory" -> "4500M",
     "spark.executor.cores" -> "1",
     "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "200", // 70 for 20 nodes cluster
+    "spark.executor.instances" -> "250", // 70 for 20 nodes cluster
     "spark.yarn.executor.memoryOverhead" -> "700",
     "spark.yarn.driver.memoryOverhead" -> "700"/*,
     "spark.dynamicAllocation.minExecutors" -> "200",

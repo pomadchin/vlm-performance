@@ -76,7 +76,9 @@ GDAL RasterSources Ingest: `max resources allocation`, `200 executors`, `1 core 
 ~~(OLD Version, is deprecated; it was written because of cluster misconfiguration (see the next section)) The new API completely replaces the old one. The two ingests are a bit different. GDAL Ingest requires a bit
 more complicated settings tuning, however, the new API is not slower and sometimes even faster.~~
 
-TO BE Updated...
+GDALRasterSources are much more complicated in tuning and give no significant performance improvements,
+however, it is probably because of an old GDAL 2.3.x version that was used on EMR cluster 
+that doesn't take into account CGroups. GDAL tests would be relaunched once we'll have GDAL 2.4 RPMs. 
 
 ### EMR maximizeResourceAllocation flag usage tip 
 

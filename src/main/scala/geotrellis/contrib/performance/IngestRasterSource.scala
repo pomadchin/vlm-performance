@@ -62,6 +62,8 @@ object IngestRasterSource {
     val LayoutLevel(zoom, layout) = summary.levelFor(layoutScheme)
     val contextRDD = RasterSourceRDD.tiledLayerRDD(sourceRDD, layout, rasterSummary = summary.some)
 
+    // println(s"contextRDD.count(): ${contextRDD.count()}")
+
     val attributeStore = S3AttributeStore(catalogURI.getBucket, catalogURI.getKey)
     val writer = S3LayerWriter(attributeStore)
 
