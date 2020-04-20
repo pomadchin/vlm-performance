@@ -16,15 +16,12 @@
 
 package geotrellis.contrib
 
-import geotrellis.contrib.performance.conf.GDALEnabled
-import geotrellis.contrib.vlm.RasterSource
-import geotrellis.contrib.vlm.config.S3Config
-import geotrellis.contrib.vlm.gdal.{GDALRasterSource, GDALWarpOptions}
-import geotrellis.contrib.vlm.geotiff.GeoTiffRasterSource
-import geotrellis.spark.io.s3.AmazonS3Client
 import geotrellis.spark.util.SparkUtils.createSparkConf
+import geotrellis.store.s3.{AmazonS3URI, S3ClientProducer}
+
 import org.apache.spark.{SparkConf, SparkContext}
-import com.amazonaws.services.s3.{AmazonS3ClientBuilder, AmazonS3URI}
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
+import scala.collection.JavaConverters._
 
 package object performance extends Serializable {
   val nlcdPath    = "s3://geotrellis-test/nlcd-geotiff"
@@ -35,47 +32,40 @@ package object performance extends Serializable {
   val nedPath     = "s3://azavea-datahub/raw/ned-13arcsec-geotiff"
   val nedURI      = new AmazonS3URI(nedPath)
 
-  @transient lazy val s3Client: AmazonS3Client =
-    if (S3Config.allowGlobalRead) {
-      val builder = AmazonS3ClientBuilder
-        .standard()
-        .withForceGlobalBucketAccessEnabled(true)
+  @transient val s3Client = S3ClientProducer.get()
 
-      val client = S3Config.region.fold(builder) { region => builder.setRegion(region); builder }.build
+  lazy val nlcdPaths: List[String] = {
+    val listRequest = ListObjectsV2Request.builder()
+      .bucket(nlcdURI.getBucket)
+      .prefix(nlcdURI.getKey)
+      .build()
 
-      new AmazonS3Client(client)
-    } else {
-      val builder = AmazonS3ClientBuilder.standard()
-      val client = S3Config.region.fold(builder) { region => builder.setRegion(region); builder }.build
-      new AmazonS3Client(client)
-    }
-
-  lazy val nlcdPaths: List[String] =
-    s3Client
-      .listKeys(nlcdURI.getBucket, nlcdURI.getKey)
+    s3Client.listObjectsV2(listRequest)
+      .contents
+      .asScala
       .toList
       .map { key => s"s3://geotrellis-test/$key" }
+  }
 
-  lazy val nedPaths: List[String] =
-    s3Client
-      .listKeys(nedURI.getBucket, nedURI.getKey)
+  lazy val nedPaths: List[String] = {
+    val listRequest = ListObjectsV2Request.builder()
+      .bucket(nedURI.getBucket)
+      .prefix(nedURI.getKey)
+      .build()
+
+    s3Client.listObjectsV2(listRequest)
+      .contents
+      .asScala
       .toList
       .map { key => s"s3://azavea-datahub/$key" }
-
-  def getRasterSource(uri: String, gdalEnabled: Boolean = GDALEnabled.enabled): RasterSource =
-    if(gdalEnabled) GDALRasterSource(uri/*, GDALWarpOptions.EMPTY.copy(
-      wm = Some(500),
-      oo = List("NUM_THREADS" -> "1"),
-      co = List("NUM_THREADS" -> "1"),
-      wo = List("NUM_THREADS" -> "1")
-    )*/) else GeoTiffRasterSource(uri)
+  }
 
   def createSparkContext(appName: String, sparkConf: SparkConf = createSparkConf): SparkContext = {
     sparkConf
       .setAppName(appName)
       .setIfMissing("spark.master", "local[*]")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .set("spark.kryo.registrator", classOf[geotrellis.spark.io.kryo.KryoRegistrator].getName)
+      .set("spark.kryo.registrator", classOf[geotrellis.spark.store.kryo.KryoRegistrator].getName)
 
     new SparkContext(sparkConf)
   }

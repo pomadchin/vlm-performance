@@ -1,5 +1,5 @@
 name := "vlm-performance"
-version := "0.1.0-SNAPSHOT"
+version := "0.2.0-SNAPSHOT"
 scalaVersion := "2.11.12"
 crossScalaVersions := Seq("2.12.8", "2.11.12")
 organization := "com.azavea"
@@ -11,7 +11,8 @@ scalacOptions ++= Seq(
   "-language:higherKinds",
   "-language:postfixOps",
   "-language:existentials",
-  "-feature"
+  "-feature",
+  "-Ypartial-unification"
 )
 
 headerLicense := Some(HeaderLicense.ALv2("2019", "Azavea"))
@@ -19,8 +20,8 @@ headerLicense := Some(HeaderLicense.ALv2("2019", "Azavea"))
 resolvers ++= Seq(
   Resolver.bintrayRepo("azavea", "maven"),
   Resolver.bintrayRepo("azavea", "geotrellis"),
-  "locationtech-releases" at "https://repo.locationtech.org/content/groups/releases",
-  "locationtech-snapshots" at "https://repo.locationtech.org/content/groups/snapshots"
+  "eclipse-releases" at "https://repo.eclipse.org/content/groups/releases",
+  "eclipse-snapshots" at "https://repo.eclipse.org/content/groups/snapshots"
  )
 
 outputStrategy := Some(StdoutOutput)
@@ -31,14 +32,11 @@ addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.f
 fork := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm"  % "3.14.0-SNAPSHOT",
-  "com.azavea.geotrellis" %% "geotrellis-contrib-gdal" % "3.14.0-SNAPSHOT",
+  "org.locationtech.geotrellis" %% "geotrellis-s3-spark" % "3.3.1-SNAPSHOT",
   "org.apache.spark"      %% "spark-core"              % "2.4.2",
   "org.apache.spark"      %% "spark-sql"               % "2.4.2",
   "org.scalatest"         %% "scalatest"               % "3.0.7" % Test
 )
-
-dependencyOverrides += "com.azavea.gdal" % "gdal-warp-bindings" % "33.5523882"
 
 test in assembly := {}
 assemblyShadeRules in assembly := {
@@ -76,18 +74,18 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
   sparkAwsRegion := "us-east-1",
   sparkEmrApplications := Seq("Hadoop", "Spark", "Ganglia", "Zeppelin"),
   sparkEmrBootstrap := List(
-    BootstrapAction(
+    /*BootstrapAction(
       "Install GDAL dependencies",
       "s3://geotrellis-test/usbuildings/bootstrap.sh",
-      "s3://geotrellis-test/usbuildings", "v1.0"
-    )
+      "s3://geotrellis-test", "v1.0"
+    )*/
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 21,
+  sparkInstanceCount := 11,
   sparkMasterType := "i3.xlarge",
   sparkCoreType := "i3.xlarge",
-  sparkMasterPrice := Some(0.2),
-  sparkCorePrice := Some(0.2),
+  sparkMasterPrice := Some(0.5),
+  sparkCorePrice := Some(0.5),
   sparkClusterName := s"GeoTrellis VLM Performance ${sys.env.getOrElse("USER", "<anonymous user>")}",
   sparkEmrServiceRole := "EMR_DefaultRole",
   sparkInstanceRole := "EMR_EC2_DefaultRole",
@@ -106,11 +104,11 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
       "spark.shuffle.compress" -> "true",
       "spark.shuffle.spill.compress" -> "true",
       "spark.rdd.compress" -> "true",
-      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64",
-      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p' -Dgeotrellis.s3.threads.rdd.write=64"
+      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'",
+      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'"
     ),
     EmrConfig("spark-env").withProperties(
-      "LD_LIBRARY_PATH" -> "/usr/local/lib"
+      "LD_LIBRARY_PATH" -> "/usr/local/lib:$LD_LIBRARY_PATH"
     ),
     EmrConfig("yarn-site").withProperties(
       "yarn.resourcemanager.am.max-attempts" -> "1",
@@ -121,7 +119,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
 )
 
 addCommandAlias("create-cluster", "ingest:sparkCreateCluster")
-addCommandAlias("ingest-ned", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest ned")
+addCommandAlias("ingest-ned", "ingest:sparkSubmitMain geotrellis.contrib.performance.Main")
 addCommandAlias("ingest-nlcd", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest nlcd")
 inConfig(Ingest)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
@@ -130,6 +128,7 @@ inConfig(Ingest)(EMRSettings ++ Seq(
     "spark.driver.cores" -> "2",
     "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
+    "spark.default.parallelism" -> "15000",
     /*"spark.dynamicAllocation.enabled" -> "false",
     "spark.executor.instances" -> "200",*/
     "spark.yarn.executor.memoryOverhead" -> "700",
@@ -148,10 +147,11 @@ inConfig(IngestRasterSourceGDAL)(EMRSettings ++ Seq(
     "spark.master" -> "yarn",
     "spark.driver.memory" -> "4200M",
     "spark.driver.cores" -> "2",
-    "spark.executor.memory" -> "4500M",
+    "spark.executor.memory" -> "1500M",
     "spark.executor.cores" -> "1",
-    "spark.dynamicAllocation.enabled" -> "false",
-    "spark.executor.instances" -> "250", // 70 for 20 nodes cluster
+    "spark.default.parallelism" -> "15000",
+    // "spark.dynamicAllocation.enabled" -> "false",
+    // "spark.executor.instances" -> "250", // 70 for 20 nodes cluster
     "spark.yarn.executor.memoryOverhead" -> "700",
     "spark.yarn.driver.memoryOverhead" -> "700"/*,
     "spark.dynamicAllocation.minExecutors" -> "200",

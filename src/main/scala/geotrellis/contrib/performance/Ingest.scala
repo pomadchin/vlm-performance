@@ -17,15 +17,16 @@
 package geotrellis.contrib.performance
 
 import geotrellis.contrib.performance.conf.IngestVersion
+import geotrellis.layer._
 import geotrellis.proj4._
-import geotrellis.raster.{DoubleCellType, MultibandTile, Tile}
+import geotrellis.raster._
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
-import geotrellis.spark.io._
-import geotrellis.spark.io.s3._
-import geotrellis.spark.io.index.ZCurveKeyIndexMethod
-import geotrellis.spark.pyramid.Pyramid
-import geotrellis.spark.tiling._
+import geotrellis.spark.store._
+import geotrellis.spark.store.s3._
+import geotrellis.store._
+import geotrellis.store.index._
+import geotrellis.store.s3._
 import geotrellis.vector._
 
 import org.apache.spark.{SparkConf, SparkContext}
@@ -48,7 +49,7 @@ object Ingest {
     val inputRdd: RDD[(ProjectedExtent, MultibandTile)] =
       S3GeoTiffRDD.spatialMultiband(bucket, key)
 
-    val (_, rasterMetaData) = TileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
+    val (_, rasterMetaData) = CollectTileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
 
     val tiled: RDD[(SpatialKey, MultibandTile)] = inputRdd.tileToLayout(rasterMetaData.cellType, rasterMetaData.layout, Bilinear)
 

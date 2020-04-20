@@ -1,4 +1,4 @@
-VLM_TEST_VERSION ?= 0.1.0
+VLM_TEST_VERSION ?= 0.2.0
 VLM_TEST_VERSION_SUFFIX ?= -SNAPSHOT
 ASSEMBLY := ./target/scala-2.11/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
 S3_URI := s3://geotrellis-test/rastersource-performance/jars/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
