@@ -22,7 +22,6 @@ import geotrellis.proj4._
 import geotrellis.raster._
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
-import geotrellis.spark.store._
 import geotrellis.spark.store.s3._
 import geotrellis.store._
 import geotrellis.store.index._

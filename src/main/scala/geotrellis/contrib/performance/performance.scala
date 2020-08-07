@@ -16,11 +16,16 @@
 
 package geotrellis.contrib
 
+import geotrellis.contrib.performance.conf.GDALEnabled
+import geotrellis.raster.RasterSource
+import geotrellis.raster.gdal.GDALRasterSource
+import geotrellis.raster.geotiff.GeoTiffRasterSource
 import geotrellis.spark.util.SparkUtils.createSparkConf
 import geotrellis.store.s3.{AmazonS3URI, S3ClientProducer}
 
 import org.apache.spark.{SparkConf, SparkContext}
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
+
 import scala.collection.JavaConverters._
 
 package object performance extends Serializable {
@@ -59,6 +64,14 @@ package object performance extends Serializable {
       .toList
       .map { key => s"s3://azavea-datahub/$key" }
   }
+
+  def getRasterSource(uri: String, gdalEnabled: Boolean = GDALEnabled.enabled): RasterSource =
+    if(gdalEnabled) GDALRasterSource(uri/*, GDALWarpOptions.EMPTY.copy(
+      wm = Some(500),
+      oo = List("NUM_THREADS" -> "1"),
+      co = List("NUM_THREADS" -> "1"),
+      wo = List("NUM_THREADS" -> "1")
+    )*/) else GeoTiffRasterSource(uri)
 
   def createSparkContext(appName: String, sparkConf: SparkConf = createSparkConf): SparkContext = {
     sparkConf
