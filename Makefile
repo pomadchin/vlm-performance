@@ -1,6 +1,6 @@
 VLM_TEST_VERSION ?= 0.2.0
 VLM_TEST_VERSION_SUFFIX ?= -SNAPSHOT
-ASSEMBLY := ./target/scala-2.11/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
+ASSEMBLY := ./target/scala-2.12/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
 S3_URI := s3://geotrellis-test/rastersource-performance/jars/vlm-performance-assembly-${VLM_TEST_VERSION}${VLM_TEST_VERSION_SUFFIX}.jar
 KEY_PAIR_FILE := ${HOME}/.ssh/geotrellis-emr.pem
 
@@ -20,6 +20,9 @@ ssh:
 
 upload-assembly-s3: ${ASSEMBLY}
 	aws s3 cp ${ASSEMBLY} ${S3_URI}
+
+upload-bootstrap:
+	aws s3 cp ./emr/bootstrap.sh s3://geotrellis-test/emr-gdal/
 
 ingest-ned:
 	aws emr add-steps --output text --cluster-id ${CLUSTER_ID} \

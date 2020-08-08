@@ -72,15 +72,15 @@ lazy val Ingest = config("ingest")
 lazy val IngestRasterSourceGDAL = config("ingestRasterSourceGDAL")
 
 lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
-  sparkEmrRelease := "emr-5.23.0",
+  sparkEmrRelease := "emr-6.0.0",
   sparkAwsRegion := "us-east-1",
   sparkEmrApplications := Seq("Hadoop", "Spark", "Ganglia", "Zeppelin"),
   sparkEmrBootstrap := List(
-    /*BootstrapAction(
+    BootstrapAction(
       "Install GDAL dependencies",
-      "s3://geotrellis-test/usbuildings/bootstrap.sh",
-      "s3://geotrellis-test", "v1.0"
-    )*/
+      "s3://geotrellis-test/emr-gdal/bootstrap.sh",
+      "3.1.2"
+    )
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
   sparkInstanceCount := 11,
@@ -106,11 +106,10 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
       "spark.shuffle.compress" -> "true",
       "spark.shuffle.spill.compress" -> "true",
       "spark.rdd.compress" -> "true",
-      "spark.driver.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'",
-      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'"
-    ),
-    EmrConfig("spark-env").withProperties(
-      "LD_LIBRARY_PATH" -> "/usr/local/lib:$LD_LIBRARY_PATH"
+      "spark.driver.extraJavaOptions" ->"-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'",
+      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -XX:+UseParallelOldGC -XX:OnOutOfMemoryError='kill -9 %p'",
+      "spark.yarn.appMasterEnv.LD_LIBRARY_PATH" -> "/usr/local/miniconda/lib/:/usr/local/lib",
+      "spark.executorEnv.LD_LIBRARY_PATH" -> "/usr/local/miniconda/lib/:/usr/local/lib"
     ),
     EmrConfig("yarn-site").withProperties(
       "yarn.resourcemanager.am.max-attempts" -> "1",

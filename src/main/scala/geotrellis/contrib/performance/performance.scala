@@ -49,7 +49,7 @@ package object performance extends Serializable {
       .contents
       .asScala
       .toList
-      .map { key => s"s3://geotrellis-test/$key" }
+      .map { key => s"s3://geotrellis-test/${key.key}" }
   }
 
   lazy val nedPaths: List[String] = {
@@ -62,7 +62,7 @@ package object performance extends Serializable {
       .contents
       .asScala
       .toList
-      .map { key => s"s3://azavea-datahub/$key" }
+      .map { key => s"s3://azavea-datahub/${key.key}" }
   }
 
   def getRasterSource(uri: String, gdalEnabled: Boolean = GDALEnabled.enabled): RasterSource =
