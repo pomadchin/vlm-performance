@@ -54,4 +54,7 @@ site/
 derby.log
 metastore_db/
 *.log
+.bsp
+.vscode
+.history
 

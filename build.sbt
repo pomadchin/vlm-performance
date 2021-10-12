@@ -1,7 +1,7 @@
 name := "vlm-performance"
-version := "0.2.0-SNAPSHOT"
-scalaVersion := "2.12.12"
-crossScalaVersions := Seq("2.12.12", "2.11.12")
+version := "0.3.0-SNAPSHOT"
+scalaVersion := "2.12.13"
+crossScalaVersions := Seq("2.12.12")
 organization := "com.azavea"
 scalacOptions ++= Seq(
   "-deprecation",
@@ -12,7 +12,8 @@ scalacOptions ++= Seq(
   "-language:postfixOps",
   "-language:existentials",
   "-feature",
-  "-Ypartial-unification"
+  "-Ypartial-unification",
+  "-target:jvm-1.8"
 )
 
 headerLicense := Some(HeaderLicense.ALv2("2019", "Azavea"))
@@ -27,22 +28,26 @@ resolvers ++= Seq(
 
 outputStrategy := Some(StdoutOutput)
 
-addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.3" cross CrossVersion.binary)
+addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full)
 addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
 
 fork := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-s3-spark" % "3.4.2-SNAPSHOT",
-  "org.locationtech.geotrellis" %% "geotrellis-gdal"     % "3.4.2-SNAPSHOT",
-  "org.apache.spark"      %% "spark-core"                % "2.4.4",
-  "org.apache.spark"      %% "spark-sql"                 % "2.4.4",
-  "org.scalatest"         %% "scalatest"                 % "3.0.8" % Test
+  "org.locationtech.geotrellis" %% "geotrellis-s3-spark" % "3.6.0",
+  "org.locationtech.geotrellis" %% "geotrellis-gdal"     % "3.6.0",
+  "org.apache.spark"      %% "spark-core"                % "3.1.2",
+  "org.apache.spark"      %% "spark-sql"                 % "3.1.2",
+  "org.scalatest"         %% "scalatest"                 % "3.2.5" % Test
 )
 
 test in assembly := {}
-assemblyShadeRules in assembly := {
-  Seq(ShadeRule.rename("shapeless.**" -> s"com.azavea.shaded.shapeless.@1").inAll)
+assembly / assemblyShadeRules := {
+  val shadePackage = "com.azavea.shaded.demo"
+  Seq(
+    ShadeRule.rename("shapeless.**" -> s"$shadePackage.shapeless.@1").inAll,
+    ShadeRule.rename("cats.kernel.**" -> s"$shadePackage.cats.kernel.@1").inAll
+  )
 }
 
 assemblyMergeStrategy in assembly := {
@@ -72,7 +77,7 @@ lazy val Ingest = config("ingest")
 lazy val IngestRasterSourceGDAL = config("ingestRasterSourceGDAL")
 
 lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
-  sparkEmrRelease := "emr-6.0.0",
+  sparkEmrRelease := "emr-6.4.0",
   sparkAwsRegion := "us-east-1",
   sparkEmrApplications := Seq("Hadoop", "Spark", "Ganglia", "Zeppelin"),
   sparkEmrBootstrap := List(
@@ -83,7 +88,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
     )
   ),
   sparkS3JarFolder := "s3://geotrellis-test/rastersource-performance/jars",
-  sparkInstanceCount := 11,
+  sparkInstanceCount := 1,
   sparkMasterType := "i3.xlarge",
   sparkCoreType := "i3.xlarge",
   sparkMasterPrice := Some(0.5),
@@ -122,6 +127,7 @@ lazy val EMRSettings = LighterPlugin.baseSettings ++ Seq(
 addCommandAlias("create-cluster", "ingest:sparkCreateCluster")
 addCommandAlias("ingest-ned", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest ned")
 addCommandAlias("ingest-nlcd", "ingest:sparkSubmitMain geotrellis.contrib.performance.Ingest nlcd")
+addCommandAlias("ingest-hdfs-s3", "ingest:sparkSubmitMain geotrellis.contrib.performance.S3HDFSTest s3uri hdfsuri")
 inConfig(Ingest)(EMRSettings ++ Seq(
   sparkSubmitConfs := Map(
     "spark.master" -> "yarn",
